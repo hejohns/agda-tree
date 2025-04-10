@@ -24,10 +24,12 @@ pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf, skip_agda: bool) -> 
 
     // TODO:
     // 1. The new workflow will no need tmp *.lagda.md
-    // 2. Instead, there will have *.lagda.tree -> *.html directly
-    // 3. Then agda-tree should recognize these HTML block in *.html (forester syntax should leave
+    // 2. Instead, there will have *.lagda.tree -> *.tree directly
+    // 3. Then agda-tree should recognize these HTML block in *.tree (forester syntax will leave
     //    unchanged by agda)
-    // 4. Replace HTML with forester namespace syntax and put them back at right place
+    // 4. Replace HTML block with forester namespace syntax
+    //
+    // Through these steps then the output should be a valid tree
     let trees = generate_lagda_md(&paths)?;
     let index_path = generate_index(working_dir, &paths)?;
     if !skip_agda {
