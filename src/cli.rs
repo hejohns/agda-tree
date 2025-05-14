@@ -31,9 +31,5 @@ pub enum Commands {
         /// The directory that generated trees should go
         #[arg(short, long)]
         output_dir: Option<PathBuf>,
-
-        /// Skip agda build (which is long)
-        #[arg(long)]
-        skip_agda: bool,
     },
 }

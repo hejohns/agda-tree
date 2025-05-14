@@ -1,20 +1,14 @@
-use html_parser::{Dom, Element, Node};
-use std::collections::VecDeque;
-use std::fs::{self, create_dir_all, read_to_string, File};
-use std::io::{self, Write};
-use std::iter::zip;
+use html_parser::{Dom, Element};
+use std::fs::{self, create_dir_all, File};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
-use crate::extract::extract_agda_code;
-use crate::tree::Tree;
-
-pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf, skip_agda: bool) -> io::Result<()> {
-    let paths = fs::read_dir(working_dir)?
+pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf) -> io::Result<()> {
+    let agda_generate_trees = fs::read_dir("html/")?
         .filter_map(Result::ok)
         .filter_map(|f| {
             if let Ok(ft) = f.file_type() {
-                if ft.is_file() && f.path().to_str()?.ends_with(".lagda.tree") {
+                if ft.is_file() && f.path().to_str()?.ends_with(".tree") {
                     return Some(f.path());
                 }
             }
@@ -22,143 +16,67 @@ pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf, skip_agda: bool) -> 
         })
         .collect::<Vec<PathBuf>>();
 
-    // TODO:
-    // 1. The new workflow will no need tmp *.lagda.md
-    // 2. Instead, there will have *.lagda.tree -> *.tree directly
-    // 3. Then agda-tree should recognize these HTML block in *.tree (forester syntax will leave
-    //    unchanged by agda)
-    // 4. Replace HTML block with forester namespace syntax
-    //
-    // Through these steps then the output should be a valid tree
-    let trees = generate_lagda_md(&paths)?;
-    let index_path = generate_index(working_dir, &paths)?;
-    if !skip_agda {
-        run_agda_build(working_dir, index_path)?;
-    }
-    collect_html(working_dir, output_dir, &paths, trees)
-}
+    create_dir_all(output_dir.join("html"))?;
 
-fn generate_lagda_md(paths: &Vec<PathBuf>) -> io::Result<Vec<Tree>> {
-    let mut r = vec![];
-    for path in paths {
-        let (tree, agda_blocks) = extract_agda_code(&path)?;
-        let mut middle = File::create(path.with_extension("md"))?;
-        for block in agda_blocks {
-            middle.write(block.as_bytes())?;
+    for tree_path in agda_generate_trees {
+        println!("Processing file: {:?}", tree_path);
+
+        let mut file = File::open(tree_path.clone())?;
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+
+        let mut new_content = String::new();
+        let mut html = String::new();
+
+        let mut recording = false;
+        let mut line: usize = 0;
+        let mut last_col_end: usize = 0;
+
+        for cur_line in content.lines() {
+            if cur_line.contains("<pre class=\"Agda\">") {
+                new_content.push_str("\\<html:pre>[class]{Agda}{\n");
+                recording = true;
+            } else if cur_line.contains("</pre>") {
+                recording = false;
+                let dom = Dom::parse(html.as_str()).unwrap();
+                html.clear();
+
+                for node in dom.children {
+                    let elem = node.element().unwrap();
+
+                    if line_of_symbol(elem) > line {
+                        for _ in 0..(line_of_symbol(elem) - line) {
+                            new_content.push('\n');
+                        }
+                        last_col_end = 1;
+                    }
+                    if col_of_symbol(elem) > last_col_end {
+                        for _ in 0..col_of_symbol(elem) - last_col_end {
+                            new_content.push(' ');
+                        }
+                    }
+                    last_col_end = end_col_of_symbol(elem);
+                    line = line_of_symbol(elem);
+
+                    new_content.push_str(symbol2forest(working_dir, elem).as_str());
+                }
+
+                new_content.push_str("}\n");
+            } else if recording {
+                html.push_str(cur_line);
+                html.push('\n');
+            } else {
+                new_content.push_str(cur_line);
+                new_content.push('\n');
+            }
         }
-        r.push(tree);
-    }
-    Ok(r)
-}
 
-fn run_agda_build(working_dir: &PathBuf, index_path: PathBuf) -> io::Result<()> {
-    let _ = Command::new("agda")
-        .current_dir(working_dir)
-        .args([
-            "--html",
-            index_path.into_os_string().into_string().unwrap().as_str(),
-        ])
-        .output()
-        .expect("failed to build agda htmls");
-    Ok(())
-}
-
-fn generate_index(working_dir: &PathBuf, paths: &Vec<PathBuf>) -> io::Result<PathBuf> {
-    // generate a index agda module, import our `.lagda.md`
-    let imports = paths
-        .into_iter()
-        .map(|path| format!("import {}", path.file_prefix().unwrap().to_str().unwrap()))
-        .collect::<Vec<String>>();
-    let index_path = working_dir.join("index.agda");
-    let mut index = File::create(&index_path)?;
-    for imp in imports {
-        index.write(imp.as_bytes())?;
-    }
-    Ok(index_path)
-}
-
-fn collect_html(
-    working_dir: &PathBuf,
-    output_dir: &PathBuf,
-    paths: &Vec<PathBuf>,
-    trees: Vec<Tree>,
-) -> io::Result<()> {
-    for (path, tree) in zip(paths.into_iter(), trees.into_iter()) {
-        let basename = path.file_prefix().unwrap().to_str().unwrap();
-        let agda_html = working_dir
-            .join("html")
-            .join(basename)
-            .with_extension("html");
-
-        let s = read_to_string(&agda_html)
-            .expect(format!("failed to open generated html file `{:?}`", agda_html).as_str());
-        let dom = Dom::parse(s.as_str()).unwrap();
-
-        let nodes = &dom.children[0].element().unwrap().children[1]
-            .element()
-            .unwrap()
-            .children[0]
-            .element()
-            .unwrap()
-            .children;
-
-        let forester_blocks = agda_html_blocks(working_dir, nodes);
-
-        let new_tree = tree.merge(forester_blocks);
-
-        create_dir_all(output_dir)?;
-        let output = File::create(output_dir.join(basename).with_extension("tree"))?;
-        new_tree.write(output);
+        println!("Producing {:?}", output_dir.join(tree_path.clone()));
+        let mut out_file = File::create(output_dir.join(tree_path))?;
+        out_file.write_all(new_content.as_bytes())?;
     }
 
     Ok(())
-}
-
-fn agda_html_blocks(working_dir: &PathBuf, nodes: &Vec<Node>) -> VecDeque<String> {
-    let mut blocks = VecDeque::new();
-    let mut buffer = String::new();
-    let mut recording = false;
-    let mut line = line_of_symbol(nodes[0].element().unwrap());
-    let mut last_col_end = end_col_of_symbol(nodes[0].element().unwrap());
-
-    for node in nodes {
-        let elem = node.element().unwrap();
-        if is_block_start(elem) {
-            recording = true;
-            line = line_of_symbol(elem);
-            last_col_end = col_of_symbol(elem);
-            buffer.push_str("\\<html:pre>[class]{Agda}{\n");
-        } else if is_block_end(elem) {
-            buffer.push_str("}");
-            blocks.push_back(buffer);
-            recording = false;
-            buffer = String::new();
-        } else if recording {
-            if line_of_symbol(elem) > line {
-                for _ in 0..(line_of_symbol(elem) - line) {
-                    buffer.push('\n');
-                }
-                last_col_end = 1;
-            }
-            if col_of_symbol(elem) > last_col_end {
-                for _ in 0..col_of_symbol(elem) - last_col_end {
-                    buffer.push(' ');
-                }
-            }
-            last_col_end = end_col_of_symbol(elem);
-            line = line_of_symbol(elem);
-            buffer.push_str(symbol2forest(working_dir, elem).as_str());
-        }
-    }
-
-    blocks
-}
-
-fn is_block_start(elem: &Element) -> bool {
-    !elem.children.is_empty() && elem.children[0].text().unwrap().contains("```agda")
-}
-fn is_block_end(elem: &Element) -> bool {
-    !elem.children.is_empty() && elem.children[0].text().unwrap().contains("```")
 }
 
 fn line_of_symbol(elem: &Element) -> usize {

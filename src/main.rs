@@ -21,7 +21,6 @@ fn main() -> io::Result<()> {
         Some(Commands::Build {
             directory,
             output_dir,
-            skip_agda,
         }) => {
             let working_dir = match directory {
                 Some(path) => path,
@@ -31,7 +30,7 @@ fn main() -> io::Result<()> {
                 Some(v) => v,
                 None => &PathBuf::new().join("trees"),
             };
-            command::build::execute(working_dir, output_dir, *skip_agda)
+            command::build::execute(working_dir, output_dir)
         }
         None => Ok(()),
     }
