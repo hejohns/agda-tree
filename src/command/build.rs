@@ -19,57 +19,7 @@ pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf) -> io::Result<()> {
     create_dir_all(output_dir)?;
 
     for tree_path in agda_generate_trees {
-        println!("Processing file: {:?}", tree_path);
-
-        let mut file = File::open(tree_path.clone())?;
-        let mut content = String::new();
-        file.read_to_string(&mut content)?;
-
-        let mut new_content = String::new();
-        let mut html = String::new();
-
-        let mut recording = false;
-        let mut line: usize = 0;
-        let mut last_col_end: usize = 0;
-
-        for cur_line in content.lines() {
-            if cur_line.contains("<pre class=\"Agda\">") {
-                new_content.push_str("\\<html:pre>[class]{Agda}{\n");
-                recording = true;
-            } else if cur_line.contains("</pre>") {
-                recording = false;
-                let dom = Dom::parse(html.as_str()).unwrap();
-                html.clear();
-
-                for node in dom.children {
-                    let elem = node.element().unwrap();
-
-                    if line_of_symbol(elem) > line {
-                        for _ in 0..(line_of_symbol(elem) - line) {
-                            new_content.push('\n');
-                        }
-                        last_col_end = 1;
-                    }
-                    if col_of_symbol(elem) > last_col_end {
-                        for _ in 0..col_of_symbol(elem) - last_col_end {
-                            new_content.push(' ');
-                        }
-                    }
-                    last_col_end = end_col_of_symbol(elem);
-                    line = line_of_symbol(elem);
-
-                    new_content.push_str(symbol2forest(working_dir, elem).as_str());
-                }
-
-                new_content.push_str("}\n");
-            } else if recording {
-                html.push_str(cur_line);
-                html.push('\n');
-            } else {
-                new_content.push_str(cur_line);
-                new_content.push('\n');
-            }
-        }
+        let new_content = postprocess(working_dir, tree_path.clone())?;
 
         let created_path = output_dir
             .join(tree_path.file_stem().unwrap())
@@ -80,6 +30,62 @@ pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn postprocess(working_dir: &PathBuf, tree_path: PathBuf) -> io::Result<String> {
+    println!("Processing file: {:?}", tree_path);
+
+    let mut file = File::open(tree_path.clone())?;
+    let mut content = String::new();
+    file.read_to_string(&mut content)?;
+
+    let mut new_content = String::new();
+    let mut html = String::new();
+
+    let mut recording = false;
+    let mut line: usize = 0;
+    let mut last_col_end: usize = 0;
+
+    for cur_line in content.lines() {
+        if cur_line.contains("<pre class=\"Agda\">") {
+            new_content.push_str("\\<html:pre>[class]{Agda}{\n");
+            recording = true;
+        } else if cur_line.contains("</pre>") {
+            recording = false;
+            let dom = Dom::parse(html.as_str()).unwrap();
+            html.clear();
+
+            for node in dom.children {
+                let elem = node.element().unwrap();
+
+                if line_of_symbol(elem) > line {
+                    for _ in 0..(line_of_symbol(elem) - line) {
+                        new_content.push('\n');
+                    }
+                    last_col_end = 1;
+                }
+                if col_of_symbol(elem) > last_col_end {
+                    for _ in 0..col_of_symbol(elem) - last_col_end {
+                        new_content.push(' ');
+                    }
+                }
+                last_col_end = end_col_of_symbol(elem);
+                line = line_of_symbol(elem);
+
+                new_content.push_str(symbol2forest(working_dir, elem).as_str());
+            }
+
+            new_content.push_str("}\n");
+        } else if recording {
+            html.push_str(cur_line);
+            html.push('\n');
+        } else {
+            new_content.push_str(cur_line);
+            new_content.push('\n');
+        }
+    }
+
+    Ok(new_content)
 }
 
 fn line_of_symbol(elem: &Element) -> usize {
