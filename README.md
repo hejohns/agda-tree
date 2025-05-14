@@ -21,16 +21,27 @@ Let's say you have a forest (evergreen notes system via [forester](https://www.j
  | |-xxx.agda-lib
 ```
 
-then you can run
+then you first run (with agda 2.8.0)
 
 ```sh
-agda-tree build xxx
+agda --html --html-highlight=code ex.lagda.tree
 ```
-After that, you can move generated `*.tree` to `trees/` directory in forest, then you can view literate Agda in forster system. The current internal working flow is as follows:
 
-![image](https://github.com/user-attachments/assets/7c729e53-71fe-4c3b-9874-700238ffc655)
+agda will produce a `html/ex.tree`, then do postprocessing
 
-agda will accept `*.lagda.tree` as input once 2.8.0 release, agda-tree will need to change workflow for that.
+```sh
+agda-tree build .
+```
+
+you will get
+
+```
+.
+|-trees
+| |- ex.tree
+```
+
+then you can view literate Agda in forster system.
 
 ## Example
 
