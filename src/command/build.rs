@@ -4,7 +4,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
 pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf) -> io::Result<()> {
-    let agda_generate_trees = fs::read_dir("html/")?
+    let agda_generate_trees = fs::read_dir(working_dir.join("html"))?
         .filter_map(Result::ok)
         .filter_map(|f| {
             if let Ok(ft) = f.file_type() {
@@ -16,7 +16,7 @@ pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf) -> io::Result<()> {
         })
         .collect::<Vec<PathBuf>>();
 
-    create_dir_all(output_dir.join("html"))?;
+    create_dir_all(output_dir)?;
 
     for tree_path in agda_generate_trees {
         println!("Processing file: {:?}", tree_path);
@@ -71,8 +71,11 @@ pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf) -> io::Result<()> {
             }
         }
 
-        println!("Producing {:?}", output_dir.join(tree_path.clone()));
-        let mut out_file = File::create(output_dir.join(tree_path))?;
+        let created_path = output_dir
+            .join(tree_path.file_stem().unwrap())
+            .with_extension("tree");
+        println!("Producing {:?}", created_path);
+        let mut out_file = File::create(created_path)?;
         out_file.write_all(new_content.as_bytes())?;
     }
 
