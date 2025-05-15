@@ -19,29 +19,22 @@ Let's say you have a forest (evergreen notes system via [forester](https://www.j
  |-trees            (for forester)
  |-xxx
  | |-xxx.agda-lib
+ | |- ex.lagda.tree
 ```
 
-then you first run (with agda 2.8.0)
+`cd xxx`, you first run agda (>= 2.8.0) with flags
 
 ```sh
 agda --html --html-highlight=code ex.lagda.tree
 ```
 
-agda will produce a `html/ex.tree`, then do postprocessing
+agda will produce a `./html/ex.tree`, then do postprocessing
 
 ```sh
-agda-tree build .
+agda-tree build
 ```
 
-you will get
-
-```
-.
-|-trees
-| |- ex.tree
-```
-
-then you can view literate Agda in forster system.
+you will get a directory `xxx/trees`, I will put this directory into configuration `forest.toml`, then you can view literate Agda in forster system.
 
 ## Example
 
