@@ -1,6 +1,6 @@
 # agda-tree
 
-Converts `*.lagda.tree` to `*.tree`.
+Post-processing agda produced `html/*.tree` to valid tree.
 
 ## Install
 
