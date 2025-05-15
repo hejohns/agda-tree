@@ -1,7 +1,8 @@
 \title{coproduct}
 \author{dannypsnl}
 
-\<html:details>{\<html:summary>{#{\triangle} Helpers}
+\subtree{
+  \title{Helpers}
 \agda{
 module coproduct where
 open import foundation
