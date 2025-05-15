@@ -1,9 +1,10 @@
 [package]
 name = "agda-tree"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 description = "A build tool for *.lagda.tree format"
 license = "GPL-3.0-or-later"
+repository = "https://github.com/dannypsnl/agda-tree"
 
 [dependencies]
 clap = { version = "4.5.11", features = ["derive"] }
