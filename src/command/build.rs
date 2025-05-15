@@ -46,9 +46,12 @@ fn postprocess(working_dir: &PathBuf, tree_path: PathBuf) -> io::Result<String> 
     let mut line: usize = 0;
     let mut last_col_end: usize = 0;
 
+
+    new_content.push_str("\\xmlns:html{http://www.w3.org/1999/xhtml}");
+
     for cur_line in content.lines() {
         if cur_line.contains("<pre class=\"Agda\">") {
-            new_content.push_str("\\<html:pre>[class]{Agda}{\n");
+            new_content.push_str("\\<html:pre>[class]{Agda}{");
             recording = true;
         } else if cur_line.contains("</pre>") {
             recording = false;
