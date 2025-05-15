@@ -36,6 +36,8 @@ agda-tree build
 
 you will get a directory `xxx/trees`, I will put this directory into configuration `forest.toml`, then you can view literate Agda in forster system.
 
+![image](https://github.com/dannypsnl/agda-tree/blob/main/workflow.svg)
+
 ## Example
 
 ![image](https://github.com/user-attachments/assets/ea6412f2-b53b-479a-9307-5934ac5804fd)
