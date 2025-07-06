@@ -10,7 +10,7 @@ cargo install agda-tree
 
 ## Usage
 
-Let's say you have a forest (evergreen notes system via [forester](https://www.jonmsterling.com/jms-005P.xml)), and the directory structure is
+Let's say you have a forest (evergreen notes system via [forester](https://www.forester-notes.org/index/index.xml)), and the directory structure is
 
 ```
 .
