@@ -150,6 +150,8 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
             || childtext.contains(')')
             || childtext.contains('{')
             || childtext.contains('}')
+            || childtext.contains('[')
+            || childtext.contains(']')
         {
             s.push_str(format!("{{\\startverb{}\\stopverb}}", childtext).as_str());
         } else {
