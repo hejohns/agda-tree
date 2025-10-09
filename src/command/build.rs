@@ -23,7 +23,7 @@ pub fn execute(working_dir: &PathBuf, output_dir: &PathBuf) -> io::Result<()> {
 
         let created_path = output_dir
             .join(tree_path.file_stem().unwrap())
-            .with_extension("tree");
+            .with_added_extension("tree");
         println!("Producing {:?}", created_path);
         let mut out_file = File::create(created_path)?;
         out_file.write_all(new_content.as_bytes())?;
@@ -143,6 +143,8 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
         // some escape code is useful for HTML, but not for forester
         let childtext = if childtext.contains("&#39;") {
             childtext.replace("&#39;", "'")
+        } else if childtext.starts_with("--") { // TODO: Hack to get \startverb-- to work "properly" in forester
+            childtext.replacen("--", " --", 1)
         } else {
             childtext.to_owned()
         };
