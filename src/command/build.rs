@@ -143,9 +143,13 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
         // some escape code is useful for HTML, but not for forester
         let childtext = if childtext.contains("&#39;") {
             childtext.replace("&#39;", "'")
-        } else if childtext.starts_with("--") { // TODO: Hack to get \startverb-- to work "properly" in forester
-            childtext.replacen("--", " --", 1)
         } else {
+            childtext.to_owned()
+        };
+        // TODO: Hack to get \startverb-- to work "properly" in forester
+        let childtext = if childtext.starts_with("--") {
+            childtext.replacen("--", " --", 1)
+        } else{
             childtext.to_owned()
         };
         if childtext.contains('(')
