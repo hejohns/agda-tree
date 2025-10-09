@@ -120,7 +120,7 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
             let split = value.split_terminator('#').collect::<Vec<&str>>();
             let a_link = split[0];
             let path = Path::new(a_link);
-            if working_dir.join(path).with_extension("lagda.tree").exists() {
+            if working_dir.join("html").join(path).with_extension("tree").exists() {
                 let mut s = path.with_extension("xml").to_str().unwrap().to_owned();
                 s.push('#');
                 if split.len() == 2 {
