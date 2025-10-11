@@ -151,6 +151,11 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
         } else {
             childtext.to_owned()
         };
+        let childtext = if childtext.contains("&quot;") {
+            childtext.replace("&quot;", "\"")
+        } else {
+            childtext.to_owned()
+        };
         // TODO: Hack to get \startverb-- to work "properly" in forester
         let childtext = if childtext.starts_with("--") {
             childtext.replacen("--", " --", 1)
