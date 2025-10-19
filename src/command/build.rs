@@ -169,7 +169,7 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
             || childtext.contains('[')
             || childtext.contains(']')
         {
-            s.push_str(format!("{{\\startverb{}\\stopverb}}", childtext).as_str());
+            s.push_str(format!("{{\\startverb {}\\stopverb}}", childtext).as_str());
         } else {
             s.push_str(format!("{{{}}}", childtext).as_str());
         }
