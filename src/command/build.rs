@@ -123,15 +123,22 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
             if working_dir.join("html").join(path).with_extension("tree").exists() {
                 let mut s = path.with_extension("").join("index.xml").to_str().unwrap().to_owned();
                 s.push('#');
-                s.push('#');
-                s.push('#');
                 if split.len() == 2 {
                     let id_part = split[1];
                     s.push_str(id_part);
                 }
                 s
             } else {
-                value
+                if split.len() == 2 {
+                    let mut s = path.to_str().unwrap().to_owned();
+                    s.push('#');
+                    let id_part = split[1];
+                    s.push_str(id_part);
+                    s
+                }
+                else{
+                    value
+                }
             }
         } else {
             value
