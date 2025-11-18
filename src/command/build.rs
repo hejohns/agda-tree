@@ -162,6 +162,11 @@ fn symbol2forest(working_dir: &PathBuf, elem: &Element) -> String {
         } else {
             childtext.to_owned()
         };
+        let childtext = if childtext.contains("&lt;") {
+            childtext.replace("&gt;", ">")
+        } else {
+            childtext.to_owned()
+        };
         let childtext = if childtext.contains("&quot;") {
             childtext.replace("&quot;", "\"")
         } else {
